@@ -414,17 +414,24 @@ Vercel's serverless functions have an **ephemeral filesystem** — your `data/` 
 
 ---
 
-## 🤝 Contributing
+## 🤝 Collaboration & Contributing
 
-Contributions are welcome. Keep PRs focused and scoped — this project is intentionally minimal.
+D2 Storage is an open-source project, and we welcome contributions, suggestions, and ideas of all kinds! Whether you want to fix a bug, suggest a new feature, or improve the documentation, we'd love to collaborate with you.
 
-```bash
-git checkout -b feat/my-feature
-git commit -m "feat: add my feature"
-# open a PR against main
-```
+### 💡 How to Get Involved
 
-Open an issue first for anything major.
+* **Suggest an Idea or Feature**: Have a recommendation to make D2 Storage better? Please open an **Issue** with the tag `enhancement` describing your idea, use cases, and how it could work.
+* **Report a Bug**: If you notice unexpected behavior, file an **Issue** with a clear description, steps to reproduce, and screenshots if possible.
+* **Ask Questions or Discuss**: Want to talk about architecture, deployment, or share what you've built? Open a thread in **GitHub Discussions** (or file a general issue if discussions aren't active).
+* **Write Code (Pull Requests)**:
+  1. Fork the repository and create your branch from `main`: `git checkout -b feat/my-amazing-feature`
+  2. Implement your changes. Make sure to keep the PR focused and minimal (this project is designed to be lightweight).
+  3. Verify your changes compile correctly by running: `npm run build`
+  4. Commit your changes with descriptive messages: `git commit -m "feat: add support for signed URLs"`
+  5. Push to your branch and open a Pull Request!
+
+### 🎯 Scope & Design Philosophy
+We want to keep D2 Storage **extremely fast, lightweight, and zero-config**. Before writing complex integrations or adding external databases, please open an issue to discuss your proposal so we can align on the implementation approach!
 
 ---
 
