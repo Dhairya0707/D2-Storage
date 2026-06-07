@@ -1,20 +1,18 @@
-import { promises as fs } from "fs";
-import path from "path";
+import { ConvexHttpClient } from "convex/browser";
+import { api } from "../../convex/_generated/api";
 
-const DATA_DIR = path.join(process.cwd(), "data");
+let client: ConvexHttpClient | null = null;
 
-async function readJSON<T>(file: string): Promise<T[]> {
-  try {
-    const raw = await fs.readFile(path.join(DATA_DIR, file), "utf-8");
-    return JSON.parse(raw);
-  } catch {
-    return [];
+function getConvexClient(): ConvexHttpClient {
+  if (client) return client;
+  
+  const convexUrl = process.env.NEXT_PUBLIC_CONVEX_URL;
+  if (!convexUrl) {
+    throw new Error("NEXT_PUBLIC_CONVEX_URL environment variable is not set");
   }
-}
-
-async function writeJSON<T>(file: string, data: T[]): Promise<void> {
-  await fs.mkdir(DATA_DIR, { recursive: true });
-  await fs.writeFile(path.join(DATA_DIR, file), JSON.stringify(data, null, 2));
+  
+  client = new ConvexHttpClient(convexUrl);
+  return client;
 }
 
 export interface Project {
@@ -34,77 +32,129 @@ export interface ApiKey {
 }
 
 export async function getProjects(): Promise<Project[]> {
-  return readJSON<Project>("projects.json");
+  const convex = getConvexClient();
+  const projects = await convex.query(api.db.getProjects);
+  return projects.map((p) => ({
+    id: p.id,
+    name: p.name,
+    rootFolder: p.rootFolder,
+    createdAt: p.createdAt,
+    corsAllowedOrigins: p.corsAllowedOrigins,
+  }));
 }
 
 export async function getProject(id: string): Promise<Project | null> {
-  const projects = await getProjects();
-  return projects.find((p) => p.id === id) || null;
+  const convex = getConvexClient();
+  const p = await convex.query(api.db.getProject, { id });
+  if (!p) return null;
+  return {
+    id: p.id,
+    name: p.name,
+    rootFolder: p.rootFolder,
+    createdAt: p.createdAt,
+    corsAllowedOrigins: p.corsAllowedOrigins,
+  };
 }
 
 export async function createProject(project: Project): Promise<void> {
-  const projects = await getProjects();
-  projects.push(project);
-  await writeJSON("projects.json", projects);
+  const convex = getConvexClient();
+  await convex.mutation(api.db.createProject, {
+    id: project.id,
+    name: project.name,
+    rootFolder: project.rootFolder,
+    createdAt: project.createdAt,
+    corsAllowedOrigins: project.corsAllowedOrigins,
+  });
 }
 
 export async function updateProject(
   id: string,
   updates: Partial<Project>
 ): Promise<Project | null> {
-  const projects = await getProjects();
-  const index = projects.findIndex((p) => p.id === id);
-  if (index === -1) return null;
-  projects[index] = { ...projects[index], ...updates };
-  await writeJSON("projects.json", projects);
-  return projects[index];
+  const convex = getConvexClient();
+  const p = await convex.mutation(api.db.updateProject, {
+    id,
+    name: updates.name,
+    rootFolder: updates.rootFolder,
+    corsAllowedOrigins: updates.corsAllowedOrigins,
+  });
+  if (!p) return null;
+  return {
+    id: p.id,
+    name: p.name,
+    rootFolder: p.rootFolder,
+    createdAt: p.createdAt,
+    corsAllowedOrigins: p.corsAllowedOrigins,
+  };
 }
 
 export async function deleteProject(id: string): Promise<void> {
-  const projects = await getProjects();
-  await writeJSON(
-    "projects.json",
-    projects.filter((p) => p.id !== id)
-  );
-  const keys = await getApiKeys();
-  await writeJSON(
-    "api_keys.json",
-    keys.filter((k) => k.projectId !== id)
-  );
+  const convex = getConvexClient();
+  await convex.mutation(api.db.deleteProject, { id });
 }
 
 export async function getApiKeys(): Promise<ApiKey[]> {
-  return readJSON<ApiKey>("api_keys.json");
+  const convex = getConvexClient();
+  const keys = await convex.query(api.db.getApiKeys);
+  return keys.map((k) => ({
+    id: k.id,
+    name: k.name,
+    keyHash: k.keyHash,
+    projectId: k.projectId,
+    createdAt: k.createdAt,
+  }));
 }
 
 export async function getApiKeysForProject(
   projectId: string
 ): Promise<ApiKey[]> {
-  const keys = await getApiKeys();
-  return keys.filter((k) => k.projectId === projectId);
+  const convex = getConvexClient();
+  const keys = await convex.query(api.db.getApiKeysForProject, { projectId });
+  return keys.map((k) => ({
+    id: k.id,
+    name: k.name,
+    keyHash: k.keyHash,
+    projectId: k.projectId,
+    createdAt: k.createdAt,
+  }));
 }
 
 export async function createApiKey(key: ApiKey): Promise<void> {
-  const keys = await getApiKeys();
-  keys.push(key);
-  await writeJSON("api_keys.json", keys);
+  const convex = getConvexClient();
+  await convex.mutation(api.db.createApiKey, {
+    id: key.id,
+    name: key.name,
+    keyHash: key.keyHash,
+    projectId: key.projectId,
+    createdAt: key.createdAt,
+  });
 }
 
 export async function deleteApiKey(id: string): Promise<void> {
-  const keys = await getApiKeys();
-  await writeJSON(
-    "api_keys.json",
-    keys.filter((k) => k.id !== id)
-  );
+  const convex = getConvexClient();
+  await convex.mutation(api.db.deleteApiKey, { id });
 }
 
 export async function findProjectByApiKey(
   keyHash: string
 ): Promise<{ project: Project; key: ApiKey } | null> {
-  const keys = await getApiKeys();
-  const match = keys.find((k) => k.keyHash === keyHash);
-  if (!match) return null;
-  const project = await getProject(match.projectId);
-  if (!project) return null;
-  return { project, key: match };
+  const convex = getConvexClient();
+  const result = await convex.query(api.db.findProjectByApiKey, { keyHash });
+  if (!result) return null;
+  return {
+    project: {
+      id: result.project.id,
+      name: result.project.name,
+      rootFolder: result.project.rootFolder,
+      createdAt: result.project.createdAt,
+      corsAllowedOrigins: result.project.corsAllowedOrigins,
+    },
+    key: {
+      id: result.key.id,
+      name: result.key.name,
+      keyHash: result.key.keyHash,
+      projectId: result.key.projectId,
+      createdAt: result.key.createdAt,
+    },
+  };
 }
