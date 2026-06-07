@@ -9,7 +9,7 @@ import { Card } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { ToastContainer, Toast } from "@/components/ui/custom-toast";
-import { Key, Plus, LogOut, Copy, Eye, Trash2, Loader2, Upload, ChevronRight, File, Image, FileText, Video, Folder, Terminal, Code, ArrowLeft, FolderPlus, Check } from "lucide-react";
+import { Key, Plus, LogOut, Copy, Eye, Trash2, Loader2, Upload, ChevronRight, File, Image, FileText, Video, Folder, Terminal, Code, ArrowLeft, FolderPlus, Check, Download } from "lucide-react";
 
 /* ─── Types ─── */
 interface Project {
@@ -661,6 +661,14 @@ export default function ProjectPage() {
                               <Eye className="h-4 w-4" />
                             </Button>
                           )}
+                          <a 
+                            href={`/api/download?url=${encodeURIComponent(f.url)}&name=${encodeURIComponent(f.name)}`}
+                            download={f.name}
+                            className="inline-flex items-center justify-center h-8 w-8 text-ink-muted hover:text-ink-dark hover:bg-surface-card rounded-md transition-colors shrink-0"
+                            title="Download file"
+                          >
+                            <Download className="h-4 w-4" />
+                          </a>
                           <Button 
                             variant="ghost" 
                             size="icon" 

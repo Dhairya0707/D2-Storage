@@ -37,7 +37,7 @@ export async function uploadFile(
   const dataUri = `data:${file.type};base64,${base64}`;
   const folder = subfolder ? `${rootFolder}/${subfolder}` : rootFolder;
 
-  const isImage = file.type.startsWith("image/");
+  const isImage = file.type.startsWith("image/") || file.type === "application/pdf";
   const isVideo = file.type.startsWith("video/");
   const isRaw = !isImage && !isVideo;
 
