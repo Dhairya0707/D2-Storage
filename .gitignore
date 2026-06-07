@@ -43,6 +43,13 @@ next-env.d.ts
 # project data
 /data/
 
+# AI agent internal tooling (not part of the open-source project)
+/.agents/
+/skills-lock.json
+/AGENTS.md
+/CLAUDE.md
+/docs/
+
 
 .env
 .env.local
