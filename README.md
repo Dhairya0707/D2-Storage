@@ -182,6 +182,8 @@ You never need to touch the Cloudinary dashboard for folder management.
 | `CLOUDINARY_API_SECRET` | ✅ | Your Cloudinary API secret |
 | `API_KEYS` | ✅ | Master admin password(s). Comma-separate for multiple: `pass1,pass2` |
 | `NEXT_PUBLIC_APP_URL` | Recommended | Your public deployment URL — used in AI prompt + docs. Defaults to `window.location.origin` on client. **Update this when you host on a custom domain.** |
+| `CONVEX_DEPLOYMENT` | ❌ Optional | Convex deployment name (e.g. `dev:fancy-llama-123`). Only needed if you run or build with Convex backend (reserved for future multi-tenant hosted version). Not needed for basic self-hosting. |
+| `NEXT_PUBLIC_CONVEX_URL` | ❌ Optional | Convex deployment HTTP URL. Only needed if Convex backend is active. |
 
 ---
 
