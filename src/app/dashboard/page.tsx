@@ -60,16 +60,36 @@ export default function DashboardPage() {
     }
   }, []);
 
-  const handleLogin = (keyToUse = masterKey) => {
-    if (!keyToUse.trim()) return;
-    const session = {
-      key: keyToUse.trim(),
-      expiresAt: Date.now() + 24 * 60 * 60 * 1000 // 1 day TTL
-    };
-    localStorage.setItem("master_key_session", JSON.stringify(session));
-    setMasterKey(keyToUse.trim());
-    setAuthenticated(true);
-    addToast("Successfully authenticated session.", "success");
+  const handleLogin = async (keyToUse = masterKey) => {
+    const trimmedKey = keyToUse.trim();
+    if (!trimmedKey) return;
+    
+    setLoading(true);
+    try {
+      const res = await fetch("/api/projects", {
+        headers: { Authorization: `Bearer ${trimmedKey}` }
+      });
+      
+      if (res.ok) {
+        const session = {
+          key: trimmedKey,
+          expiresAt: Date.now() + 24 * 60 * 60 * 1000 // 1 day TTL
+        };
+        localStorage.setItem("master_key_session", JSON.stringify(session));
+        setMasterKey(trimmedKey);
+        setAuthenticated(true);
+        addToast("Successfully authenticated session.", "success");
+      } else if (res.status === 401) {
+        addToast("Invalid master password. Access denied.", "error");
+      } else {
+        addToast(`Server error (${res.status}). Check server logs.`, "error");
+      }
+    } catch (err) {
+      console.error(err);
+      addToast("Failed to connect to server.", "error");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleLogout = () => {
@@ -125,9 +145,17 @@ export default function DashboardPage() {
             </div>
             <Button
               onClick={() => handleLogin()}
-              className="w-full bg-primary hover:bg-primary-active text-white font-medium h-11 transition-colors"
+              disabled={loading}
+              className="w-full bg-primary hover:bg-primary-active text-white font-medium h-11 transition-colors flex items-center justify-center gap-2"
             >
-              Sign In
+              {loading ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Verifying...
+                </>
+              ) : (
+                "Sign In"
+              )}
             </Button>
             <p className="text-[11px] text-ink-soft text-center pt-2">
               Session expires automatically after 24 hours.

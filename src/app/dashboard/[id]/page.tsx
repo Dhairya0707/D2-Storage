@@ -155,9 +155,12 @@ export default function ProjectPage() {
             addToast("Project not found.", "error");
             setTimeout(() => router.push("/dashboard"), 2000);
           }
-        } else {
-          addToast("Failed to authenticate session.", "error");
+        } else if (res.status === 401) {
+          addToast("Session expired or invalid. Please log in again.", "error");
+          localStorage.removeItem("master_key_session");
           router.push("/dashboard");
+        } else {
+          addToast(`Server error (${res.status}). Check server logs.`, "error");
         }
       } catch (err) {
         console.error(err);
