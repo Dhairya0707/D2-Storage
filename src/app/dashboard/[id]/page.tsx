@@ -62,6 +62,7 @@ export default function ProjectPage() {
   // File system states
   const [activeTab, setActiveTab] = useState<"assets" | "integration" | "settings">("assets");
   const [files, setFiles] = useState<FileItem[]>([]);
+  const [locallyUploadedFiles, setLocallyUploadedFiles] = useState<FileItem[]>([]);
   const [folders, setFolders] = useState<string[]>([]);
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [loadingFiles, setLoadingFiles] = useState(false);
@@ -202,8 +203,19 @@ export default function ProjectPage() {
       const res = await fetch(`/api/files?${params}`, { headers: projectHeaders() });
       if (res.ok) {
         const data = await res.json();
-        if (cursor) setFiles(prev => [...prev, ...data.files]);
-        else setFiles(data.files);
+        if (cursor) {
+          setFiles(prev => [...prev, ...data.files]);
+        } else {
+          // Remove from locallyUploadedFiles any items that are now present in data.files
+          setLocallyUploadedFiles(prevLocal => {
+            const remainingLocal = prevLocal.filter(
+              localFile => !data.files.some((serverFile: FileItem) => serverFile.id === localFile.id)
+            );
+            // Prepend remaining local files to the server response
+            setFiles([...remainingLocal, ...data.files]);
+            return remainingLocal;
+          });
+        }
         setNextCursor(data.nextCursor);
       }
     } catch (err) {
@@ -235,6 +247,7 @@ export default function ProjectPage() {
       });
       if (res.ok) {
         setFiles(prev => prev.filter(f => f.id !== fileToDelete.id));
+        setLocallyUploadedFiles(prev => prev.filter(f => f.id !== fileToDelete.id));
         addToast("Asset deleted successfully.", "success");
       } else {
         addToast("Failed to delete asset.", "error");
@@ -494,7 +507,7 @@ export default function ProjectPage() {
           </div>
 
           {activeTab === "assets" && (
-            <div className="grid md:grid-cols-[260px_1fr] gap-8">
+            <div className="grid md:grid-cols-[260px_1fr] gap-8 min-w-0">
               {/* Sidebar: Subfolders, Upload and create folder */}
               <aside className="space-y-6">
                 <Card className="p-5 border border-border bg-surface-card/10 shadow-none space-y-4 rounded-xl">
@@ -582,21 +595,24 @@ export default function ProjectPage() {
                   subfolder={subfolder} 
                   onUploaded={(newFile) => {
                     if (newFile) {
-                      setFiles(prev => [newFile, ...prev]);
+                      setLocallyUploadedFiles(prev => [newFile, ...prev]);
+                      setFiles(prev => {
+                        if (prev.some(f => f.id === newFile.id)) return prev;
+                        return [newFile, ...prev];
+                      });
                       addToast(`File uploaded successfully.`, "success");
                     } else {
                       addToast(`File uploaded!`, "success");
                     }
-                    setTimeout(() => {
-                      fetchFiles();
-                      fetchFolders();
-                    }, 2000);
+                    // Refresh data instantly
+                    fetchFiles();
+                    fetchFolders();
                   }} 
                 />
               </aside>
 
               {/* Main files grid */}
-              <main className="space-y-4">
+              <main className="space-y-4 min-w-0">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border pb-3">
                   <div className="space-y-1">
                     {renderBreadcrumbs()}
@@ -617,11 +633,11 @@ export default function ProjectPage() {
                     <p className="text-xs text-ink-muted mt-1">Upload a file to start serving assets.</p>
                   </div>
                 ) : (
-                  <div className="grid sm:grid-cols-2 gap-4">
+                  <div className="grid sm:grid-cols-2 gap-4 min-w-0">
                     {files.map(f => (
                       <div 
                         key={f.id} 
-                        className="p-4 border border-border bg-canvas hover:bg-surface-card/20 transition-all rounded-xl shadow-none flex flex-row items-center justify-between gap-4"
+                        className="p-4 border border-border bg-canvas hover:bg-surface-card/20 transition-all rounded-xl shadow-none flex flex-row items-center justify-between gap-4 w-full min-w-0"
                       >
                         <div className="flex items-center gap-3 flex-1 min-w-0">
                           <div className="p-2 bg-surface-card/50 rounded-lg shrink-0 border border-border">
@@ -786,9 +802,9 @@ export default function ProjectPage() {
                   If you want to manage assets inside a specific folder named <code className="bg-surface-card px-1.5 py-0.5 rounded font-mono text-xs text-primary">xyz</code>, the API requests are constructed as follows:
                 </p>
                 <div className="grid md:grid-cols-2 gap-4 pt-1">
-                  <div className="space-y-1">
+                  <div className="space-y-1 min-w-0">
                     <span className="text-[10px] text-ink-soft font-semibold uppercase tracking-wider">1. Uploading to "xyz"</span>
-                    <pre className="p-3 bg-ink-dark text-[#efe9de] font-mono text-[10px] rounded-lg overflow-x-auto leading-relaxed">
+                    <pre className="p-3 bg-ink-dark text-[#efe9de] font-mono text-[10px] rounded-lg overflow-x-auto w-full max-w-full block leading-relaxed">
 {`POST ${typeof window !== "undefined" ? window.location.origin : ""}/api/upload?projectId=${project.id}
 Headers:
   Authorization: Bearer ${projectApiKey || "<YOUR_API_KEY>"}
@@ -797,9 +813,9 @@ Body (FormData):
   folder: "xyz"`}
                     </pre>
                   </div>
-                  <div className="space-y-1">
+                  <div className="space-y-1 min-w-0">
                     <span className="text-[10px] text-ink-soft font-semibold uppercase tracking-wider">2. Listing files in "xyz"</span>
-                    <pre className="p-3 bg-ink-dark text-[#efe9de] font-mono text-[10px] rounded-lg overflow-x-auto leading-relaxed">
+                    <pre className="p-3 bg-ink-dark text-[#efe9de] font-mono text-[10px] rounded-lg overflow-x-auto w-full max-w-full block leading-relaxed">
 {`GET ${typeof window !== "undefined" ? window.location.origin : ""}/api/files?projectId=${project.id}&folder=xyz
 Headers:
   Authorization: Bearer ${projectApiKey || "<YOUR_API_KEY>"}`}
@@ -830,7 +846,7 @@ Headers:
                       <Copy className="h-3 w-3" /> Copy
                     </button>
                   </div>
-                  <pre className="p-4 font-mono text-[11px] md:text-xs overflow-x-auto text-[#efe9de] leading-relaxed">
+                  <pre className="p-4 font-mono text-[11px] md:text-xs overflow-x-auto w-full max-w-full block text-[#efe9de] leading-relaxed">
                     {`curl -X POST \\\n  -H "Authorization: Bearer ${projectApiKey || "<YOUR_PROJECT_API_KEY>"}" \\\n  -F "file=@/path/to/file.png" \\`}
                     {subfolder ? `\n  -F "folder=${subfolder}" \\` : ""}
                     {`\n  "${typeof window !== "undefined" ? window.location.origin : ""}/api/upload?projectId=${project.id}"`}
@@ -853,7 +869,7 @@ Headers:
                       <Copy className="h-3 w-3" /> Copy
                     </button>
                   </div>
-                  <pre className="p-4 font-mono text-[11px] md:text-xs overflow-x-auto text-[#efe9de] leading-relaxed">
+                  <pre className="p-4 font-mono text-[11px] md:text-xs overflow-x-auto w-full max-w-full block text-[#efe9de] leading-relaxed">
 {`fetch("${typeof window !== "undefined" ? window.location.origin : ""}/api/files?projectId=${project.id}${subfolder ? `&folder=${subfolder}` : ""}", {
   headers: {
     "Authorization": "Bearer ${projectApiKey || "<YOUR_PROJECT_API_KEY>"}"
@@ -1229,28 +1245,65 @@ function UploadCard({ projectId, masterKey, subfolder, onUploaded }: {
   onUploaded: (newFile?: FileItem) => void;
 }) {
   const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const [dragging, setDragging] = useState(false);
 
-  const upload = async (file: File) => {
+  // Warn user if they try to close/refresh tab during upload
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (uploading) {
+        e.preventDefault();
+        e.returnValue = "An upload is currently in progress. Refreshing or leaving now will cancel it.";
+        return e.returnValue;
+      }
+    };
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [uploading]);
+
+  const upload = (file: File) => {
     setUploading(true);
+    setUploadProgress(0);
+
     const fd = new FormData();
     fd.append("file", file);
     if (subfolder) fd.append("folder", subfolder);
-    try {
-      const res = await fetch(`/api/upload?projectId=${projectId}`, {
-        method: "POST",
-        headers: { Authorization: `Bearer ${masterKey}` },
-        body: fd,
-      });
-      if (res.ok) {
-        const data = await res.json();
-        onUploaded(data.file);
+
+    const xhr = new XMLHttpRequest();
+    xhr.open("POST", `/api/upload?projectId=${projectId}`, true);
+    xhr.setRequestHeader("Authorization", `Bearer ${masterKey}`);
+
+    // Track progress
+    xhr.upload.onprogress = (event) => {
+      if (event.lengthComputable) {
+        const percentage = Math.round((event.loaded / event.total) * 100);
+        setUploadProgress(percentage);
       }
-    } catch (e) {
-      console.error(e);
-    } finally {
+    };
+
+    xhr.onload = () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        try {
+          const data = JSON.parse(xhr.responseText);
+          onUploaded(data.file);
+        } catch (e) {
+          console.error("Failed to parse upload response", e);
+          onUploaded();
+        }
+      } else {
+        console.error("Upload failed with status", xhr.status);
+        onUploaded();
+      }
       setUploading(false);
-    }
+    };
+
+    xhr.onerror = () => {
+      console.error("Upload error");
+      onUploaded();
+      setUploading(false);
+    };
+
+    xhr.send(fd);
   };
 
   return (
@@ -1262,15 +1315,33 @@ function UploadCard({ projectId, masterKey, subfolder, onUploaded }: {
         onDrop={e => { e.preventDefault(); setDragging(false); const f = e.dataTransfer.files[0]; if (f) upload(f); }}
         className={`border-2 border-dashed rounded-xl p-6 text-center transition-all cursor-pointer
           ${dragging ? "border-primary bg-primary/5" : "border-border bg-canvas"} 
-          ${uploading ? "opacity-50" : ""}`}
+          ${uploading ? "opacity-75 cursor-not-allowed" : ""}`}
       >
-        <input type="file" id="proj-upload" className="hidden"
-          onChange={e => { const f = e.target.files?.[0]; if (f) upload(f); }} />
-        <label htmlFor="proj-upload" className="cursor-pointer space-y-1 block">
-          <Upload className={`mx-auto h-6 w-6 ${uploading ? "animate-bounce text-primary" : "text-ink-muted"}`} />
-          <p className="text-xs text-ink-dark font-medium">{uploading ? "Uploading..." : "Click or drag file"}</p>
-          <p className="text-[10px] text-ink-soft">Supports all formats (JSON, images, PDF, code, video)</p>
+        <input 
+          type="file" 
+          id="proj-upload" 
+          className="hidden"
+          disabled={uploading}
+          onChange={e => { const f = e.target.files?.[0]; if (f) upload(f); }} 
+        />
+        <label htmlFor={uploading ? undefined : "proj-upload"} className="cursor-pointer space-y-1 block">
+          <Upload className={`mx-auto h-6 w-6 ${uploading ? "animate-pulse text-primary" : "text-ink-muted"}`} />
+          <p className="text-xs text-ink-dark font-medium">
+            {uploading ? `Uploading... ${uploadProgress}%` : "Click or drag file"}
+          </p>
+          <p className="text-[10px] text-ink-soft">
+            {uploading ? "Do not close or refresh this tab" : "Supports all formats (JSON, images, PDF, code, video)"}
+          </p>
         </label>
+        
+        {uploading && (
+          <div className="mt-4 w-full bg-surface-card rounded-full h-1.5 overflow-hidden border border-border">
+            <div 
+              className="bg-primary h-full transition-all duration-150 ease-out" 
+              style={{ width: `${uploadProgress}%` }}
+            />
+          </div>
+        )}
       </div>
     </Card>
   );

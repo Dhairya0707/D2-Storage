@@ -235,7 +235,7 @@ export default function DashboardPage() {
                 >
                   <div className="space-y-2">
                     <div className="flex justify-between items-start gap-4 min-w-0">
-                      <h3 className="font-serif text-xl text-ink-dark tracking-tight group-hover:text-primary transition-colors truncate max-w-[220px]" title={p.name}>{p.name}</h3>
+                      <h3 className="font-serif text-xl text-ink-dark tracking-tight group-hover:text-primary transition-colors truncate flex-1 min-w-0" title={p.name}>{p.name}</h3>
                       <Badge className="bg-primary hover:bg-primary text-white rounded-md text-[10px] uppercase font-semibold px-2 py-0.5 tracking-wider shrink-0">Active</Badge>
                     </div>
                     <div className="text-xs text-ink-muted font-mono pt-1 flex flex-col gap-1 min-w-0">

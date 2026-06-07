@@ -304,7 +304,7 @@ NEXT_PUBLIC_APP_URL=http://localhost:3001`}
                   <span className="font-mono text-xs font-semibold text-ink-dark">/api/upload</span>
                 </div>
                 <p className="text-xs text-ink-medium leading-relaxed font-light">
-                  Upload binary data (images, videos, documents) straight to Cloudinary. Namespacing prefixes are appended automatically.
+                  Upload binary data (images, videos, documents) straight to Cloudinary. Max file size is 10 MB per request. Namespacing prefixes are appended automatically.
                 </p>
                 <div className="bg-[#1c1917] border border-surface-dark-elevated rounded-xl overflow-hidden relative text-ink-soft">
                   <div className="bg-surface-dark-elevated px-4 py-2 border-b border-surface-dark-elevated flex items-center justify-between text-[11px] font-mono">
@@ -312,7 +312,7 @@ NEXT_PUBLIC_APP_URL=http://localhost:3001`}
                   </div>
                   <div className="p-4 font-mono text-xs space-y-2 text-[#efe9de]">
                     <div><span className="text-primary">Authorization:</span> Bearer &lt;project_api_key&gt;</div>
-                    <div><span className="text-primary">file:</span> Binary stream (File form)</div>
+                    <div><span className="text-primary">file:</span> Binary stream (File form, max 10 MB)</div>
                     <div><span className="text-primary">folder:</span> (Optional) Subdirectory mapping</div>
                   </div>
                 </div>

@@ -175,7 +175,7 @@ export default function LandingPage() {
               </div>
               <h4 className="font-serif text-lg text-ink-dark font-medium">Stateless Gateway</h4>
               <p className="text-xs text-ink-muted leading-relaxed font-light">
-                Stateless design ensures lightning-fast proxying. No heavy database sync or backend queue delays.
+                Stateless design ensures lightning-fast proxying. Supports up to 10 MB payloads per request out of the box.
               </p>
             </Card>
           </div>
